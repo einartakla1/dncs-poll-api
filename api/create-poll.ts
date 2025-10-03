@@ -1,16 +1,20 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import { redis } from "./_client";
+import { checkAdminAuth } from "./_auth";
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== "POST") return res.status(405).end();
+
+    if (!checkAdminAuth(req, res)) return;
 
     const { question, options } = req.body;
     if (!question || !options || !Array.isArray(options)) {
         return res.status(400).json({ error: "Missing question or options" });
     }
 
-    const pollId = uuidv4();
+    const pollId = randomUUID();
     const poll = {
         pollId,
         question,

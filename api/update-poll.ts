@@ -1,8 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { redis } from "./_client";
+import { checkAdminAuth } from "./_auth";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== "POST") return res.status(405).end();
+
+    if (!checkAdminAuth(req, res)) return;
 
     const { pollId, question, options } = req.body;
     if (!pollId || !question || !Array.isArray(options)) {
