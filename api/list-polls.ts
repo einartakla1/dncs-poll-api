@@ -18,7 +18,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (!status || poll.status === status) {
             polls.push({
-                ...poll,
+                pollId: poll.pollId,
+                question: poll.question,
+                status: poll.status,
+                createdAt: poll.createdAt,
                 options: typeof poll.options === 'string' ? JSON.parse(poll.options) : poll.options,
             });
         }
