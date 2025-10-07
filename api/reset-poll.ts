@@ -13,7 +13,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const poll = await redis.hgetall<Record<string, string>>(`poll:${pollId}`);
     if (!poll || !poll.pollId) return res.status(404).json({ error: "Poll not found" });
 
-    const options = JSON.parse(poll.options as string).map((o: any) => ({
+    // Parse options if they're a string, otherwise use them as-is
+    let options = typeof poll.options === 'string' ? JSON.parse(poll.options) : poll.options;
+
+    options = options.map((o: any) => ({
         ...o,
         votes: 0,
     }));
