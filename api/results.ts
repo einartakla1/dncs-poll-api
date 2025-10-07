@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS headers
     const allowedOrigins = [
         'https://yourdomain.com',
-        'https://www.yourdomain.com',
+        'https://www.dn.no',
         'http://localhost:3000'
     ];
 
@@ -38,11 +38,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Check if this voter has already voted (for UI state)
     const voterToken = req.cookies?.poll_token;
     let hasVoted = false;
-    let userVote = null;
 
     if (voterToken) {
-        hasVoted = await redis.sismember(`voters:${pollId}`, voterToken);
-        // If voted, we don't track which option (for privacy), so just return true
+        const voted = await redis.sismember(`voters:${pollId}`, voterToken);
+        hasVoted = voted === 1; // Convert 1/0 to true/false
     }
 
     return res.status(200).json({

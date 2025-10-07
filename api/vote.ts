@@ -26,8 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // CORS headers (adjust domains to your needs)
     const allowedOrigins = [
-        'https://yourdomain.com',
-        'https://www.yourdomain.com',
+        'https://dn.no',
+        'https://www.dn.no',
         'http://localhost:3000' // for development
     ];
 
