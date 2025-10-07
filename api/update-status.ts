@@ -7,19 +7,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!checkAdminAuth(req, res)) return;
 
-    const { pollId, question, options } = req.body;
-    if (!pollId || !question || !Array.isArray(options)) {
-        return res.status(400).json({ error: "Missing params" });
+    const { pollId, status } = req.body;
+    if (!pollId || !status) {
+        return res.status(400).json({ error: "Missing pollId or status" });
+    }
+
+    // Only allow active or closed
+    if (!["active", "closed"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be: active or closed" });
     }
 
     const poll = await redis.hgetall<Record<string, string>>(`poll:${pollId}`);
-    if (!poll || !poll.pollId) return res.status(404).json({ error: "Poll not found" });
+    if (!poll || !poll.pollId) {
+        return res.status(404).json({ error: "Poll not found" });
+    }
 
-    await redis.hset(`poll:${pollId}`, {
-        ...poll,
-        question,
-        options: JSON.stringify(options.map((opt, i) => ({ id: i, text: opt, votes: 0 }))),
-    });
+    await redis.hset(`poll:${pollId}`, { ...poll, status: status });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, status: status });
 }

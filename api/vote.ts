@@ -80,9 +80,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Poll not found" });
     }
 
-    // Check if poll is active (not draft)
-    if (poll.status === "draft") {
-        return res.status(403).json({ error: "Poll is not active" });
+    if (poll.status === "closed") {
+        return res.status(403).json({ error: "Poll is closed. Voting is no longer allowed." });
     }
 
     // Parse options

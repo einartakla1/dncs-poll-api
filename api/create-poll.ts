@@ -3,7 +3,6 @@ import { randomUUID } from "crypto";
 import { redis } from "./_client";
 import { checkAdminAuth } from "./_auth";
 
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== "POST") return res.status(405).end();
 
@@ -19,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         pollId,
         question,
         options: JSON.stringify(options.map((opt, i) => ({ id: i, text: opt, votes: 0 }))),
-        status: "draft",
+        status: "active", // Changed from "draft" to "active"
         createdAt: Date.now(),
     };
 
