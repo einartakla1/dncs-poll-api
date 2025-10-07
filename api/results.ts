@@ -8,6 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const allowedOrigins = [
         'https://yourdomain.com',
         'https://www.dn.no',
+        'https://editor.vev.design/',
+        'https://nhst.vev.site',
         'http://localhost:3000'
     ];
 
