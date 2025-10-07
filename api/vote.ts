@@ -22,7 +22,6 @@ function getVoterToken(req: VercelRequest, res: VercelResponse): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== "POST") return res.status(405).end();
 
     // CORS headers (adjust domains to your needs)
     const allowedOrigins = [
@@ -37,7 +36,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (origin && allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     }
+
+    // Handle preflight OPTIONS request
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+
+    if (req.method !== "POST") return res.status(405).end();
 
     const { pollId, optionId } = req.body;
     if (!pollId || optionId === undefined) {
@@ -51,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const requestCount = await redis.incr(rateLimitKey);
     if (requestCount === 1) {
-        await redis.expire(rateLimitKey, 60); // 1 minute window
+        await redis.expire(rateLimitKey, 60);
     }
     if (requestCount > 20) {
         return res.status(429).json({ error: "Too many requests. Please try again later." });
@@ -62,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Check if already voted
     const voted = await redis.sismember(`voters:${pollId}`, voterToken);
-    if (voted) {
+    if (voted === 1) {
         return res.status(400).json({ error: "Already voted" });
     }
 

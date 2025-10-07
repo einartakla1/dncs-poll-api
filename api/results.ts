@@ -2,11 +2,10 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { redis } from "./_client";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== "GET") return res.status(405).end();
 
     // CORS headers
     const allowedOrigins = [
-        'https://yourdomain.com',
+        'https://dn.no',
         'https://www.dn.no',
         'https://editor.vev.design/',
         'https://nhst.vev.site',
@@ -17,33 +16,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (origin && allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     }
+
+    // Handle preflight OPTIONS - BEFORE any other method checks
+    if (req.method === "OPTIONS") return res.status(200).end();
+
+    // Now check for GET
+    if (req.method !== "GET") return res.status(405).end();
 
     const pollId = req.query.pollId as string;
-    if (!pollId) {
-        return res.status(400).json({ error: "Missing pollId" });
-    }
+    if (!pollId) return res.status(400).json({ error: "Missing pollId" });
 
     const poll = await redis.hgetall<Record<string, string>>(`poll:${pollId}`);
-    if (!poll || !poll.pollId) {
-        return res.status(404).json({ error: "Poll not found" });
-    }
+    if (!poll || !poll.pollId) return res.status(404).json({ error: "Poll not found" });
 
-    // Only return public polls (not drafts)
-    if (poll.status === "draft") {
-        return res.status(403).json({ error: "Poll is not public" });
-    }
+    if (poll.status === "draft") return res.status(403).json({ error: "Poll is not public" });
 
     const options = typeof poll.options === 'string' ? JSON.parse(poll.options) : poll.options;
     const totalVotes = options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
 
-    // Check if this voter has already voted (for UI state)
     const voterToken = req.cookies?.poll_token;
     let hasVoted = false;
 
     if (voterToken) {
         const voted = await redis.sismember(`voters:${pollId}`, voterToken);
-        hasVoted = voted === 1; // Convert 1/0 to true/false
+        hasVoted = voted === 1;
     }
 
     return res.status(200).json({
