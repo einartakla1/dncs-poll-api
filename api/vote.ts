@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { randomUUID } from "crypto";
 import { redis } from "./_client";
 import { createHash } from "crypto";
 
@@ -8,28 +7,14 @@ function hashIP(ip: string): string {
     return createHash('sha256').update(ip + process.env.RATE_LIMIT_SALT).digest('hex');
 }
 
-// Helper to get or create voter token
-function getVoterToken(req: VercelRequest, res: VercelResponse): string {
-    const existingToken = req.cookies?.poll_token;
-
-    if (existingToken) {
-        return existingToken;
-    }
-
-    const newToken = randomUUID();
-    res.setHeader("Set-Cookie", `poll_token=${newToken}; Path=/; HttpOnly; Max-Age=31536000; SameSite=None; Secure`);
-    return newToken;
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-
-    // CORS headers (adjust domains to your needs)
+    // CORS headers
     const allowedOrigins = [
         'https://dn.no',
         'https://www.dn.no',
         'https://editor.vev.design',
         'https://nhst.vev.site',
-        'http://localhost:3000' // for development
+        'http://localhost:3000'
     ];
 
     const origin = req.headers.origin;
@@ -45,10 +30,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).end();
     }
 
-    if (req.method !== "POST") return res.status(405).end();
+    if (req.method !== "POST") {
+        return res.status(405).end();
+    }
 
-    const { pollId, optionId } = req.body;
-    if (!pollId || optionId === undefined) {
+    const { pollId, optionId, voterToken } = req.body;
+    if (!pollId || optionId === undefined || !voterToken) {
         return res.status(400).json({ error: "Missing params" });
     }
 
@@ -59,16 +46,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const requestCount = await redis.incr(rateLimitKey);
     if (requestCount === 1) {
-        await redis.expire(rateLimitKey, 60);
+        await redis.expire(rateLimitKey, 60); // 1 minute window
     }
     if (requestCount > 20) {
         return res.status(429).json({ error: "Too many requests. Please try again later." });
     }
 
-    // Get or create voter token
-    const voterToken = getVoterToken(req, res);
-
-    // Check if already voted
+    // Check if already voted using voterToken from body
     const voted = await redis.sismember(`voters:${pollId}`, voterToken);
     if (voted === 1) {
         return res.status(400).json({ error: "Already voted" });
@@ -80,8 +64,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Poll not found" });
     }
 
+    // Check if poll is closed
     if (poll.status === "closed") {
-        return res.status(403).json({ error: "Poll is closed. Voting is no longer allowed." });
+        return res.status(403).json({ error: "Poll is closed" });
     }
 
     // Parse options

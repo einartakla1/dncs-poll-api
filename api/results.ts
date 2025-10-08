@@ -19,21 +19,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     }
 
+    // Handle preflight OPTIONS - BEFORE any other method checks
     if (req.method === "OPTIONS") return res.status(200).end();
+
+    // Now check for GET
     if (req.method !== "GET") return res.status(405).end();
 
     const pollId = req.query.pollId as string;
+    const voterToken = req.query.voterToken as string; // Get voterToken from query params
+
     if (!pollId) return res.status(400).json({ error: "Missing pollId" });
 
     const poll = await redis.hgetall<Record<string, string>>(`poll:${pollId}`);
     if (!poll || !poll.pollId) return res.status(404).json({ error: "Poll not found" });
 
-    // No draft check needed - all polls are visible
-
     const options = typeof poll.options === 'string' ? JSON.parse(poll.options) : poll.options;
     const totalVotes = options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
 
-    const voterToken = req.cookies?.poll_token;
+    // Check if this voter has already voted using voterToken from query
     let hasVoted = false;
 
     if (voterToken) {
@@ -46,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         options: options,
         totalVotes: totalVotes,
         hasVoted: hasVoted,
-        status: poll.status || "active", // Include status in response
-        isClosed: poll.status === "closed" // Helper flag for frontend
+        status: poll.status || "active",
+        isClosed: poll.status === "closed"
     });
 }
