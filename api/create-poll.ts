@@ -8,7 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!checkAdminAuth(req, res)) return;
 
-    const { question, options } = req.body;
+    const { question, options, showVoteCount = true } = req.body;
     if (!question || !options || !Array.isArray(options)) {
         return res.status(400).json({ error: "Missing question or options" });
     }
@@ -18,7 +18,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         pollId,
         question,
         options: JSON.stringify(options.map((opt, i) => ({ id: i, text: opt, votes: 0 }))),
-        status: "active", // Changed from "draft" to "active"
+        status: "active",
+        showVoteCount: showVoteCount.toString(), // Store as string for Redis hash
         createdAt: Date.now(),
     };
 

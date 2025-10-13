@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!checkAdminAuth(req, res)) return;
 
-    const { pollId, question, options } = req.body;
+    const { pollId, question, options, showVoteCount } = req.body;
     if (!pollId || !question || !Array.isArray(options)) {
         return res.status(400).json({ error: "Missing params" });
     }
@@ -30,11 +30,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
     });
 
-    await redis.hset(`poll:${pollId}`, {
+    const updatedPoll: Record<string, string> = {
         ...poll,
         question,
         options: JSON.stringify(updatedOptions),
-    });
+    };
+
+    // Update showVoteCount if provided
+    if (showVoteCount !== undefined) {
+        updatedPoll.showVoteCount = showVoteCount.toString();
+    }
+
+    await redis.hset(`poll:${pollId}`, updatedPoll);
 
     return res.status(200).json({ success: true });
 }
