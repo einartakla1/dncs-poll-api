@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         question,
         options: JSON.stringify(options.map((opt, i) => ({ id: i, text: opt, votes: 0 }))),
         status: "active",
-        showVoteCount: showVoteCount.toString(), // Store as string for Redis hash
+        showVoteCount: String(showVoteCount === true || showVoteCount === 'true'), // Handle both boolean and string
         createdAt: Date.now(),
     };
 

@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Update showVoteCount if provided
     if (showVoteCount !== undefined) {
-        updatedPoll.showVoteCount = showVoteCount.toString();
+        updatedPoll.showVoteCount = String(showVoteCount === true || showVoteCount === 'true');
     }
 
     await redis.hset(`poll:${pollId}`, updatedPoll);
