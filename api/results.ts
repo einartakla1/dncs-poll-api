@@ -50,19 +50,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let responseOptions;
     let totalVotes;
 
-    if (showVoteCount) {
-        // Show vote counts
-        responseOptions = options;
-        totalVotes = options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
-    } else {
-        // Hide vote counts - only show structure
-        responseOptions = options.map((opt: any) => ({
-            id: opt.id,
-            text: opt.text,
-            votes: 0 // Always return 0 when hidden
-        }));
-        totalVotes = 0;
-    }
+    responseOptions = options;
+    totalVotes = options.reduce((sum: number, opt: any) => sum + opt.votes, 0);
+
 
     return res.status(200).json({
         question: poll.question,
