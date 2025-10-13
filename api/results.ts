@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const options = typeof poll.options === 'string' ? JSON.parse(poll.options) : poll.options;
 
     // Parse showVoteCount (defaults to true for backwards compatibility)
-    const showVoteCount = poll.showVoteCount === undefined || poll.showVoteCount === 'true';
+    const showVoteCount = String(poll.showVoteCount) !== 'false';
 
     // Check if this voter has already voted using voterToken from query
     let hasVoted = false;
