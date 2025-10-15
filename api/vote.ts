@@ -85,7 +85,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         poll: {
             question: poll.question,
             options: options,
-            totalVotes: options.reduce((sum: number, opt: any) => sum + opt.votes, 0)
+            totalVotes: options.reduce((sum: number, opt: any) => sum + opt.votes, 0),
+            showVoteCount: String(poll.showVoteCount) !== 'false'
         }
     });
 }
